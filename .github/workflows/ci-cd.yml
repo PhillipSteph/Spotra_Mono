@@ -38,7 +38,7 @@ jobs:
 
     - name: Upload Backend Test Results
       if: always()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: backend-test-results
         path: Spotra_BE/build/test-results/test/
@@ -67,7 +67,7 @@ jobs:
 
     - name: Upload Frontend Test Results
       if: always()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: frontend-test-coverage
         path: Spotra_FE/coverage/
@@ -103,7 +103,7 @@ jobs:
       run: ./gradlew clean build -x test --no-daemon
 
     - name: Upload Backend Build Artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: backend-jar
         path: Spotra_BE/build/libs/
@@ -132,7 +132,7 @@ jobs:
       run: npm run build
 
     - name: Upload Frontend Build Artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: frontend-build
         path: Spotra_FE/build/
@@ -157,7 +157,7 @@ jobs:
       run: npm ci
 
     - name: Download Frontend Build Artifact
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: frontend-build
         path: Spotra_FE/build/
@@ -191,7 +191,7 @@ jobs:
 
     - name: Upload Post-Build Test Results
       if: always()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: frontend-post-build-test-results
         path: Spotra_FE/coverage/
