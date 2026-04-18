@@ -1,0 +1,197 @@
+name: Spotra CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  backend-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v3
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+    - name: Cache Gradle packages
+      uses: actions/cache@v3
+      with:
+        path: ~/.gradle/caches
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/gradle-wrapper.properties') }}
+        restore-keys: |
+          ${{ runner.os }}-gradle-
+
+    - name: Make gradlew executable
+      working-directory: ./Spotra_BE
+      run: chmod +x gradlew
+
+    - name: Run Backend Tests
+      working-directory: ./Spotra_BE
+      run: ./gradlew test --no-daemon
+
+    - name: Upload Backend Test Results
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: backend-test-results
+        path: Spotra_BE/build/test-results/test/
+
+  frontend-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: Spotra_FE/package-lock.json
+
+    - name: Install Frontend Dependencies
+      working-directory: ./Spotra_FE
+      run: npm ci
+
+    - name: Run Frontend Tests
+      working-directory: ./Spotra_FE
+      run: CI=true npm test -- --coverage --watchAll=false
+
+    - name: Upload Frontend Test Results
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: frontend-test-coverage
+        path: Spotra_FE/coverage/
+
+  build-backend:
+    needs: backend-tests
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v3
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+    - name: Cache Gradle packages
+      uses: actions/cache@v3
+      with:
+        path: ~/.gradle/caches
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/gradle-wrapper.properties') }}
+        restore-keys: |
+          ${{ runner.os }}-gradle-
+
+    - name: Make gradlew executable
+      working-directory: ./Spotra_BE
+      run: chmod +x gradlew
+
+    - name: Build Backend JAR
+      working-directory: ./Spotra_BE
+      run: ./gradlew clean build -x test --no-daemon
+
+    - name: Upload Backend Build Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: backend-jar
+        path: Spotra_BE/build/libs/
+
+  build-frontend:
+    needs: frontend-tests
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: Spotra_FE/package-lock.json
+
+    - name: Install Frontend Dependencies
+      working-directory: ./Spotra_FE
+      run: npm ci
+
+    - name: Build Frontend
+      working-directory: ./Spotra_FE
+      run: npm run build
+
+    - name: Upload Frontend Build Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: frontend-build
+        path: Spotra_FE/build/
+
+  frontend-post-build-tests:
+    needs: build-frontend
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: Spotra_FE/package-lock.json
+
+    - name: Install Frontend Dependencies
+      working-directory: ./Spotra_FE
+      run: npm ci
+
+    - name: Download Frontend Build Artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: frontend-build
+        path: Spotra_FE/build/
+
+    - name: Verify Frontend Build Output
+      working-directory: ./Spotra_FE
+      run: |
+        if [ -f build/index.html ]; then
+          echo "✅ Frontend build output verified: index.html found"
+        else
+          echo "❌ Frontend build verification failed: index.html not found"
+          exit 1
+        fi
+
+    - name: Run Post-Build Tests
+      working-directory: ./Spotra_FE
+      run: CI=true npm test -- --testPathPattern="App.test.js" --watchAll=false
+
+    - name: Verify Build Artifacts
+      working-directory: ./Spotra_FE
+      run: |
+        echo "📦 Frontend Build Contents:"
+        ls -lah build/ || echo "Build directory not found"
+        echo ""
+        echo "📊 Build Statistics:"
+        if [ -d build ]; then
+          find build -type f | wc -l
+          echo "files in build directory"
+          du -sh build/
+        fi
+
+    - name: Upload Post-Build Test Results
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: frontend-post-build-test-results
+        path: Spotra_FE/coverage/
