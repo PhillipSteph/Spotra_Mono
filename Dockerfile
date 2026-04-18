@@ -22,10 +22,10 @@ COPY Spotra_FE/ /app/frontend/
 WORKDIR /app/frontend
 
 # Install dependencies and build
-RUN npm install && npm run build
+RUN npm ci && npm run build
 
 # Stage 3: Runtime - Combine both applications
-FROM eclipse-temurin:17-jre-alpine
+FROM eclipse-temurin:17-jre-jammy
 
 WORKDIR /app
 
@@ -35,8 +35,8 @@ COPY --from=backend-builder /app/backend/build/libs/*.jar /app/backend.jar
 # Copy the built frontend assets from frontend-builder stage
 COPY --from=frontend-builder /app/frontend/build /app/static
 
-# Install curl for health checks (optional)
-RUN apk add --no-cache curl
+# Install curl for health checks
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
 # Expose ports
 EXPOSE 8085 8086
