@@ -39,11 +39,11 @@ COPY --from=frontend-builder /app/frontend/build /app/static
 RUN apk add --no-cache curl
 
 # Expose ports
-EXPOSE 8080
+EXPOSE 8085 8086
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD curl -f http://localhost:8080/h2-console || exit 1
+    CMD curl -f http://localhost:8085/h2-console || exit 1
 
 # Start the backend application
-ENTRYPOINT ["java", "-jar", "/app/backend.jar"]
+ENTRYPOINT ["java", "-jar", "/app/backend.jar", "--server.port=8085"]
