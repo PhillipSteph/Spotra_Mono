@@ -1,0 +1,38 @@
+# IDEs and Editors
+.idea/
+.vscode/
+*.swp
+*.swo
+*.iml
+.DS_Store
+
+# Java / Gradle (Spotra_BE)
+Spotra_BE/.gradle/
+Spotra_BE/build/
+Spotra_BE/bin/
+Spotra_BE/out/
+Spotra_BE/.settings/
+Spotra_BE/.project/
+Spotra_BE/.classpath/
+
+# Node / React (Spotra_FE)
+Spotra_FE/node_modules/
+Spotra_FE/build/
+Spotra_FE/dist/
+Spotra_FE/.env.local
+Spotra_FE/.env.development.local
+Spotra_FE/.env.test.local
+Spotra_FE/.env.production.local
+Spotra_FE/npm-debug.log*
+Spotra_FE/yarn-debug.log*
+Spotra_FE/yarn-error.log*
+
+# Docker
+.dockerignore
+
+# Logs
+*.log
+
+# OS generated files
+ehthumbs.db
+Thumbs.db
