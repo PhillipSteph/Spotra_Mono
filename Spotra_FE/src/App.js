@@ -15,13 +15,19 @@ const Icons = {
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
   ),
   Calendar: () => (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
   ),
   Pause: () => (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
   ),
   Play: () => (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+  ),
+  ChevronLeft: () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+  ),
+  ChevronRight: () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
   )
 };
 
@@ -33,8 +39,12 @@ function App() {
   const [newGeraetDesc, setNewGeraetDesc] = useState('');
   const [newGeraetId, setNewGeraetId] = useState('');
   const [newGeraetImage, setNewGeraetImage] = useState(null);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+
+  // Date State
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [viewDate, setViewDate] = useState(new Date()); // For navigating the calendar picker
   const [showDatePicker, setShowDatePicker] = useState(false);
+
   const [error, setError] = useState(null);
 
   // UI States
@@ -135,9 +145,88 @@ function App() {
     return { id: last.id, name: last.sportgeraet?.name || last.geraet?.name, vol, saetze: last.saetze?.length || 0 };
   };
 
+  // Calendar Helpers
+  const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
+  const getFirstDayOfMonth = (year, month) => {
+    const day = new Date(year, month, 1).getDay();
+    return day === 0 ? 6 : day - 1; // Adjust to Monday start
+  };
+
+  const renderCalendar = () => {
+    const year = viewDate.getFullYear();
+    const month = viewDate.getMonth();
+    const monthName = viewDate.toLocaleString('default', { month: 'long' });
+    const daysInMonth = getDaysInMonth(year, month);
+    const firstDay = getFirstDayOfMonth(year, month);
+
+    const days = [];
+    // Prev month days
+    const prevMonthLastDay = new Date(year, month, 0).getDate();
+    for (let i = firstDay - 1; i >= 0; i--) {
+      days.push({ day: prevMonthLastDay - i, current: false });
+    }
+    // Current month days
+    for (let i = 1; i <= daysInMonth; i++) {
+      days.push({ day: i, current: true });
+    }
+    // Next month days fill
+    const totalSlots = 42;
+    const nextFill = totalSlots - days.length;
+    for (let i = 1; i <= nextFill; i++) {
+      days.push({ day: i, current: false });
+    }
+
+    return (
+      <div className="calendar-card" onClick={e => e.stopPropagation()}>
+        <div className="calendar-top-nav">
+          <button className="calendar-nav-btn" onClick={() => setViewDate(new Date(year, month - 1, 1))}>
+            <Icons.ChevronLeft />
+          </button>
+          <div className="calendar-month-year">
+            <h3>{monthName}</h3>
+            <span>{year}</span>
+          </div>
+          <button className="calendar-nav-btn" onClick={() => setViewDate(new Date(year, month + 1, 1))}>
+            <Icons.ChevronRight />
+          </button>
+        </div>
+
+        <div className="calendar-weekdays">
+          {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(d => (
+            <div key={d} className="calendar-weekday">{d}</div>
+          ))}
+        </div>
+
+        <div className="calendar-grid">
+          {days.map((d, i) => {
+            const isSelected = d.current &&
+              selectedDate.getDate() === d.day &&
+              selectedDate.getMonth() === month &&
+              selectedDate.getFullYear() === year;
+
+            return (
+              <div
+                key={i}
+                className={`calendar-day ${!d.current ? 'other-month' : ''} ${isSelected ? 'selected' : ''}`}
+                onClick={() => {
+                  if (d.current) {
+                    setSelectedDate(new Date(year, month, d.day));
+                    setShowDatePicker(false);
+                  }
+                }}
+              >
+                {d.day}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   const renderHome = () => {
     const active = getActiveSummary();
-    const dateFormatted = new Date(selectedDate).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const dateStr = selectedDate.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
     return (
       <>
@@ -147,12 +236,9 @@ function App() {
             <p className="header-date-text">Willkommen zurück</p>
           </div>
           <div className="header-right">
-            <div className="header-date-box" onClick={() => setShowDatePicker(true)}>
-              <div className="date-box-top">
-                <Icons.Calendar />
-                <span className="date-box-label">DATE</span>
-              </div>
-              <div className="date-box-value">{dateFormatted}</div>
+            <div className="header-date-display" onClick={() => { setViewDate(new Date(selectedDate)); setShowDatePicker(true); }}>
+              <span>{dateStr}</span>
+              <Icons.Calendar />
             </div>
           </div>
         </header>
@@ -258,20 +344,11 @@ function App() {
         </section>
       )}
 
-      {/* DATE PICKER POPUP */}
+      {/* CUSTOM DATE PICKER MODAL */}
       {showDatePicker && (
         <div className="modal-overlay" onClick={() => setShowDatePicker(false)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ textAlign: 'center' }}>
-            <div className="modal-header">
-              <h2>Datum wählen</h2>
-            </div>
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => { setSelectedDate(e.target.value); setShowDatePicker(false); }}
-              style={{ marginBottom: '20px' }}
-            />
-            <button className="btn-save-main" onClick={() => setShowDatePicker(false)}>Schließen</button>
+          <div style={{ width: '90%', maxWidth: '380px' }}>
+            {renderCalendar()}
           </div>
         </div>
       )}
