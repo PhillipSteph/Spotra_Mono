@@ -22,7 +22,7 @@ COPY Spotra_FE/ /app/frontend/
 WORKDIR /app/frontend
 
 # Install dependencies and build
-RUN npm ci && npm run build
+RUN npm install && npm run build
 
 # Stage 3: Runtime - Combine both applications
 FROM eclipse-temurin:17-jre-jammy
