@@ -1,5 +1,5 @@
 # Stage 1: Build Backend (Java/Gradle)
-FROM gradle:8.5-jdk17 AS backend-builder
+FROM gradle:8.14-jdk17 AS backend-builder
 
 WORKDIR /app
 
@@ -39,7 +39,6 @@ COPY --from=frontend-builder /app/frontend/build /app/static
 RUN apk add --no-cache curl
 
 # Expose ports
-# 8080 for Spring Boot backend, 3000 will not be used in this setup
 EXPOSE 8080
 
 # Health check
